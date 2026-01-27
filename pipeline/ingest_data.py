@@ -1,10 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+import click
 import pandas as pd
 from sqlalchemy import create_engine
 from tqdm.auto import tqdm
-
 
 dtype = {
     "VendorID": "Int64",
@@ -21,8 +18,6 @@ dtype = {
     "tip_amount": "float64",
     "tolls_amount": "float64",
     "improvement_surcharge": "float64",
-
-    
     "total_amount": "float64",
     "congestion_surcharge": "float64"
 }
@@ -32,26 +27,22 @@ parse_dates = [
     "tpep_dropoff_datetime"
 ]
 
-
-
-def run():
-    pg_user = 'root'
-    pg_password = 'root'
-    pg_host = 'localhost'
-    pg_port = '5432'
-    pg_db = 'ny_taxi'
-
-    year = 2021
-    month = 1
-
-    target_table = 'yellow_taxi_data_2021_01'
-
-    chunksize = 100000
-
+@click.command()
+@click.option('--pg-user', required=True)
+@click.option('--pg-pass', required=True)
+@click.option('--pg-host', required=True)
+@click.option('--pg-port', required=True)
+@click.option('--pg-db', required=True)
+@click.option('--target-table', required=True)
+@click.option('--year', type=int, required=True)
+@click.option('--month', type=int, required=True)
+@click.option('--chunksize', type=int, default=100000)
+def run(pg_user, pg_pass, pg_host, pg_port, pg_db, target_table, year, month, chunksize):
+    
     prefix = 'https://github.com/DataTalksClub/nyc-tlc-data/releases/download/yellow'
     url = f'{prefix}/yellow_tripdata_{year:04d}-{month:02d}.csv.gz'
 
-    engine = create_engine(f'postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_db}')
+    engine = create_engine(f'postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
 
     df_iter = pd.read_csv(
         url,
@@ -62,24 +53,22 @@ def run():
     )
 
     first = True
-
     for df_chunk in tqdm(df_iter):
         if first:
             df_chunk.head(0).to_sql(
-                name=target_table, 
-                con=engine, 
+                name=target_table,
+                con=engine,
                 if_exists='replace'
             )
             first = False
             print(f'Created table {target_table} in the database.')
-        
+
         df_chunk.to_sql(
-            name=target_table, 
-            con=engine, 
+            name=target_table,
+            con=engine,
             if_exists='append'
         )
-        print(f'Inserted chunk of size {len(df_chunk)} into {target_table}.')   
+        print(f'Inserted chunk of size {len(df_chunk)} into {target_table}.')
 
 if __name__ == '__main__':
     run()
-
