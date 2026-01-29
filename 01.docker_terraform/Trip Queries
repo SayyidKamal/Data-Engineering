@@ -1,0 +1,38 @@
+-- Number of trips in Nov 2025 with trip_distance ≤ 1 mile
+SELECT 
+	count (1)
+	FROM public.green_tripdata 
+	where TO_CHAR(lpep_pickup_datetime, 'YYYYMMDD') > '2025-11-01' 
+	and TO_CHAR(lpep_pickup_datetime, 'YYYYMMDD') <= '2025-12-01'
+and trip_distance <= 1.00;
+
+-- Pickup day with the longest total trip distance, excluding trips ≥ 100 miles
+SELECT 
+	TO_CHAR(lpep_pickup_datetime, 'YYYYMMDD') AS pickup_date, 
+	trip_distance  FROM public.green_tripdata 
+where trip_distance < 100
+order by trip_distance  desc;
+
+-- Pickup zone with the highest total_amount on November 18, 2025 
+select 
+	t."PULocationID", z."Zone", sum(t.total_amount)
+from Zones z , green_tripdata t
+where t."PULocationID" = z."LocationID"
+and TO_CHAR(t.lpep_pickup_datetime, 'YYYYMMDD') = '20251118'
+group by t."PULocationID", z."Zone"
+order by sum(t.total_amount) desc
+
+-- Drop-off zone with the largest tip for pickups in "East Harlem North" during Nov 2025 
+select 
+	TO_CHAR(t.lpep_pickup_datetime, 'MM') AS pickup_month,
+	puz."Zone" As pick_up_zone,
+	doz."Zone" As drop_off_zone,
+	t.tip_amount
+from zones puz, zones doz, green_tripdata t
+where puz."LocationID" = t."PULocationID"
+and doz."LocationID" = t."DOLocationID"
+and puz."Zone" = 'East Harlem North'
+and TO_CHAR(t.lpep_pickup_datetime, 'MM') = '11'
+order by t.tip_amount desc
+limit 1;
+	
